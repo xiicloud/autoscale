@@ -1,0 +1,25 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "htjvdG/znrHmFYRQBqA2vHrJsF4=",
+			"path": "github.com/Sirupsen/logrus",
+			"revision": "081307d9bc1364753142d5962fc1d795c742baaf",
+			"revisionTime": "2016-04-16T08:21:37Z"
+		},
+		{
+			"checksumSHA1": "Ufrex/PpclfqVToYNvjB1y4dg0A=",
+			"path": "github.com/docker/go-units",
+			"revision": "f2d77a61e3c169b43402a0a1e84f06daf29b8190",
+			"revisionTime": "2016-06-13T21:20:13Z"
+		},
+		{
+			"checksumSHA1": "JMwkJpWOXuDU8GPKhzvfoTAZGjU=",
+			"path": "golang.org/x/sys/unix",
+			"revision": "354f231ae1a9ca2d3a6a1a7c5d40b1213d761675",
+			"revisionTime": "2015-10-08T20:13:40Z"
+		}
+	],
+	"rootPath": "github.com/nicescale/autoscale"
+}

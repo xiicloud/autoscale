@@ -1,0 +1,45 @@
+# cSphere autoscale controller
+
+## 编译方法
+本项目利用go 1.6引入的vendor功能管理依赖包。
+请使用go 1.6及以上版本进行编译，编译方法为在项目根目录下执行`make`。
+
+如果使用go 1.5，可以设置`GO15VENDOREXPERIMENT=1`环境变量然后编译。
+
+低版本的go需要自行处理依赖。
+
+## 使用方法
+配置文件路径： `/etc/autoscale.json`
+
+配置文件格式参考[sample-config.json](sample-config.json).
+
+```json
+{
+  "ApiKey": "fbfed031cadbfa4b661c9cf0916ed5ce78637038",
+  "ControllerAddr": "http://192.168.122.110/",
+  "Groups": [
+    {
+    	"App": "myapp",
+    	"Service": "api",
+    	"CpuLow": 5,
+    	"CpuHigh": 10,
+    	"MemoryLow": "15m",
+    	"MemoryHigh": "20m",
+    	"MaxContainers": 2,
+    	"MinContainers": 1
+    }
+  ]
+}
+```
+
+各字段说明：
+
+- ApiKey: cSphere控制器的ApiKey，可以在cSphere管理面板的“设置”页面创建
+- ControllerAddr: cSphere控制器的地址，格式为：http://controller-host:port/
+- Groups: 这个数组里配置所有需要启用自动伸缩功能的服务列表
+- App: 应用名称
+- Service: 服务名称
+- CpuLow: 服务中各容器的平均CPU利用率低于`CpuLow`**且**平均内存消耗低于`MemoryLow`时，容器数量自动减少1个，容器最低数量由`MinContainers`决定
+- CpuHigh: 服务中各容器的平均CPU利用率大于这个值时，容器数量自动加1, 容器数量最大值由`MaxContainers`决定
+- MemoryHigh: 服务中各容器的平均内存消耗大于这个值时，容器数量自动加1, 容器数量最大值由`MaxContainers`决定
+

@@ -1,0 +1,16 @@
+{
+  "ApiKey": "fbfed031cadbfa4b661c9cf0916ed5ce78637038",
+  "ControllerAddr": "http://192.168.122.110/",
+  "Groups": [
+    {
+    	"App": "myapp",
+    	"Service": "api",
+    	"CpuLow": 5,
+    	"CpuHigh": 10,
+    	"MemoryLow": "15m",
+    	"MemoryHigh": "20m",
+    	"MaxContainers": 2,
+    	"MinContainers": 1
+    }
+  ]
+}
