@@ -1,4 +1,12 @@
 # cSphere autoscale controller
+每秒检查一下指定服务下所有容器的平均CPU利用率和内存占用量。
+如果连续5次检查结果都超出上限，增加1个容器。
+
+如果连续5次检查结果都低于下限，减少一个容器。
+
+用户可以配置最大容器数量和最少容器数量。
+
+Docker 镜像：`docker pull index.csphere.cn/csphere/autoscale`
 
 ## 编译方法
 本项目利用go 1.6引入的vendor功能管理依赖包。
