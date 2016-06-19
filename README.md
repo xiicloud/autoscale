@@ -8,6 +8,9 @@
 
 Docker 镜像：`docker pull index.csphere.cn/csphere/autoscale`
 
+
+**注意：**由于OEM版本cSphere后端删除了`addcontainer`、`delcontainer`这两个API，新增了`changesum`API，所以OEM版本请使用`index.csphere.cn/csphere/autoscale:new`这个镜像，否则无法扩容。
+
 ## 编译方法
 本项目利用go 1.6引入的vendor功能管理依赖包。
 请使用go 1.6及以上版本进行编译，编译方法为在项目根目录下执行`make`。
