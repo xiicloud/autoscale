@@ -60,8 +60,8 @@ func listContainers(app, service string) ([]*Container, error) {
 	return r, nil
 }
 
-func scale(app, service, action string) error {
-	u := controllerAddr + fmt.Sprintf("/api/instances/%s/%s/%s?ApiKey=%s", app, service, action, apiKey)
+func scale(app, service string, n int) error {
+	u := controllerAddr + fmt.Sprintf("/api/instances/%s/%s/changesum?ApiKey=%s&sum=%d", app, service, apiKey, n)
 	logrus.Debugf("scale api url: %s", u)
 	req, err := http.NewRequest("PATCH", u, nil)
 	if err != nil {
@@ -81,10 +81,10 @@ func scale(app, service, action string) error {
 	return fmt.Errorf("unexpecte http status %d", res.StatusCode)
 }
 
-func addContainer(app, service string) error {
-	return scale(app, service, "addcontainer")
+func addContainer(app, service string, n int) error {
+	return scale(app, service, n)
 }
 
-func delContainer(app, service string) error {
-	return scale(app, service, "delcontainer")
+func delContainer(app, service string, n int) error {
+	return scale(app, service, n)
 }

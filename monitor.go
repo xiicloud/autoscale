@@ -186,6 +186,7 @@ func (m *monitor) start() {
 
 		scaleOut := false
 		scaleIn := false
+		containerCount := len(m.watchers)
 		x := sum(m.recent5)
 		switch x {
 		case 5:
@@ -215,13 +216,13 @@ func (m *monitor) start() {
 		m.Unlock()
 
 		if scaleOut {
-			if err := addContainer(m.App, m.Service); err != nil {
+			if err := addContainer(m.App, m.Service, containerCount+1); err != nil {
 				logrus.Errorf("Failed to scale out %s.%s: %v", m.App, m.Service, err)
 			} else {
 				logrus.Infof("Added 1 new container to %s.%s", m.App, m.Service)
 			}
 		} else if scaleIn {
-			if err := delContainer(m.App, m.Service); err != nil {
+			if err := delContainer(m.App, m.Service, containerCount-1); err != nil {
 				logrus.Errorf("Failed to scale in %s.%s: %v", m.App, m.Service, err)
 			} else {
 				logrus.Infof("Deleted 1 new container from %s.%s", m.App, m.Service)
