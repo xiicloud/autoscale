@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"reflect"
 	"strings"
 
 	"github.com/Sirupsen/logrus"
@@ -50,8 +49,8 @@ type AutoScaleGroup struct {
 	CpuLow        float64
 	MemoryHigh    float64
 	MemoryLow     float64
-	MaxContainers float64
-	MinContainers float64
+	MaxContainers int
+	MinContainers int
 }
 
 type Config struct {
@@ -61,58 +60,52 @@ type Config struct {
 }
 
 func (c *AutoScaleGroup) UnmarshalJSON(b []byte) error {
-	m := make(map[string]interface{})
+	type tmp AutoScaleGroup // alias to avoid endless recursion.
+	m := struct {
+		tmp
+		MemoryHigh interface{}
+		MemoryLow  interface{}
+	}{}
 	if err := json.Unmarshal(b, &m); err != nil {
 		return err
 	}
 
-	if v, ok := m["App"].(string); !ok {
-		return fmt.Errorf("App must be a string")
-
-	} else {
-		c.App = v
+	if m.MaxContainers < 1 {
+		return fmt.Errorf("MaxContainers must be a positive integer")
 	}
 
-	if v, ok := m["Service"].(string); !ok {
-		return fmt.Errorf("Service must be a string")
-	} else {
-		c.Service = v
+	if m.MinContainers < 1 {
+		return fmt.Errorf("MinContainers must be a positive integer")
+	} else if m.MinContainers > m.MaxContainers {
+		return fmt.Errorf("MinContainers must be less than MaxContainers")
 	}
 
-	fields := map[string]bool{
-		"CpuHigh":       true,
-		"CpuLow":        true,
-		"MemoryHigh":    true,
-		"MemoryLow":     true,
-		"MaxContainers": true,
-		"MinContainers": true,
+	var err error
+	if m.tmp.MemoryHigh, err = parseFloat64(m.MemoryHigh); err != nil {
+		return err
 	}
 
-	vc := reflect.Indirect(reflect.ValueOf(c))
-	for k, v := range m {
-		if !fields[k] {
-			continue
-		}
-
-		f := vc.FieldByName(k)
-		switch t := v.(type) {
-		case string:
-			vv, err := units.FromHumanSize(t)
-			if err != nil {
-				return fmt.Errorf("failed to parse %s to int: %v", k, err)
-			}
-
-			f.SetFloat(float64(vv))
-		case float64:
-			f.SetFloat(t)
-
-		default:
-			xx := reflect.TypeOf(t)
-			return fmt.Errorf("%s must be an integer, got %s", k, xx.Name())
-		}
+	if m.tmp.MemoryLow, err = parseFloat64(m.MemoryLow); err != nil {
+		return err
 	}
 
+	*c = AutoScaleGroup(m.tmp)
 	return nil
+}
+
+func parseFloat64(v interface{}) (float64, error) {
+	switch t := v.(type) {
+	case string:
+		vv, err := units.FromHumanSize(t)
+		if err != nil {
+			return 0, fmt.Errorf("failed to parse %v to int: %v", v, err)
+		}
+		return float64(vv), nil
+	case float64:
+		return t, nil
+	default:
+		return 0, fmt.Errorf("%v must be an integer", v)
+	}
 }
 
 func ParseConfig(path string) (*Config, error) {

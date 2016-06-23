@@ -113,7 +113,9 @@ type monitor struct {
 	watchers map[string]*watcher
 	cpu      map[string]float64
 	mem      map[string]float64
-	recent5  []int8 // 0: no scale events. 1: scale out. -1: scale in.
+
+	// The result of the last 5 checks. 0: no scale events. 1: scale out. -1: scale in.
+	recent5 []int8
 }
 
 func newMonitor(asg *AutoScaleGroup) *monitor {
@@ -166,6 +168,9 @@ func sum(vars []int8) int8 {
 func (m *monitor) start() {
 	go m.watchContainersChange()
 
+	// Wait for the stats monitor to feed data.
+	time.Sleep(time.Second * 5)
+
 	for range time.Tick(time.Second) {
 		m.Lock()
 		logrus.Debugf("monitors count: %d", len(m.watchers))
@@ -186,7 +191,6 @@ func (m *monitor) start() {
 
 		scaleOut := false
 		scaleIn := false
-		containerCount := len(m.watchers)
 		x := sum(m.recent5)
 		switch x {
 		case 5:
@@ -199,30 +203,27 @@ func (m *monitor) start() {
 			continue
 		}
 		m.recent5 = make([]int8, 0, 5)
+		currentContainers := len(m.watchers)
+		m.Unlock()
 
-		currentContainers := float64(len(m.watchers))
 		if scaleIn && currentContainers <= m.MinContainers {
-			logrus.Debugf("containers limit(less than %d) reached", int(m.MinContainers))
-			m.Unlock()
+			logrus.Debugf("containers limit(less than %d) reached", m.MinContainers)
 			continue
 		}
 
 		if scaleOut && currentContainers >= m.MaxContainers {
-			logrus.Debugf("containers limit(more than %d) reached", int(m.MaxContainers))
-			m.Unlock()
+			logrus.Debugf("containers limit(more than %d) reached", m.MaxContainers)
 			continue
 		}
 
-		m.Unlock()
-
 		if scaleOut {
-			if err := addContainer(m.App, m.Service, containerCount+1); err != nil {
+			if err := scale(m.App, m.Service, currentContainers+1); err != nil {
 				logrus.Errorf("Failed to scale out %s.%s: %v", m.App, m.Service, err)
 			} else {
 				logrus.Infof("Added 1 new container to %s.%s", m.App, m.Service)
 			}
 		} else if scaleIn {
-			if err := delContainer(m.App, m.Service, containerCount-1); err != nil {
+			if err := scale(m.App, m.Service, currentContainers-1); err != nil {
 				logrus.Errorf("Failed to scale in %s.%s: %v", m.App, m.Service, err)
 			} else {
 				logrus.Infof("Deleted 1 new container from %s.%s", m.App, m.Service)

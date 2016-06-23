@@ -74,17 +74,9 @@ func scale(app, service string, n int) error {
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode == http.StatusOK {
+	if res.StatusCode == http.StatusOK && res.StatusCode != http.StatusNoContent {
 		return nil
 	}
 
 	return fmt.Errorf("unexpecte http status %d", res.StatusCode)
-}
-
-func addContainer(app, service string, n int) error {
-	return scale(app, service, n)
-}
-
-func delContainer(app, service string, n int) error {
-	return scale(app, service, n)
 }

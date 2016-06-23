@@ -12,7 +12,9 @@ func TestUnmarshalAutoScaleGroup(t *testing.T) {
   "MemoryHigh": "100m",
   "MemoryLow": 102400,
   "Service": "web",
-  "NotExists":true
+  "NotExists":true,
+  "MaxContainers": 2,
+  "MinContainers": 1
 }`
 	c := &AutoScaleGroup{}
 	if err := json.Unmarshal([]byte(raw), c); err != nil {
