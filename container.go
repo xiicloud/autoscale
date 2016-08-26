@@ -74,7 +74,7 @@ func scale(app, service string, n int) error {
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode == http.StatusOK && res.StatusCode != http.StatusNoContent {
+	if res.StatusCode == http.StatusOK || res.StatusCode == http.StatusNoContent {
 		return nil
 	}
 
