@@ -9,8 +9,6 @@
 Docker 镜像：`docker pull index.csphere.cn/csphere/autoscale`
 
 
-**注意：**由于OEM版本cSphere后端删除了`addcontainer`、`delcontainer`这两个API，新增了`changesum`API，所以OEM版本请使用`index.csphere.cn/csphere/autoscale:new`这个镜像，否则无法扩容。
-
 ## 编译方法
 本项目利用go 1.6引入的vendor功能管理依赖包。
 请使用go 1.6及以上版本进行编译，编译方法为在项目根目录下执行`make`。
@@ -30,14 +28,15 @@ Docker 镜像：`docker pull index.csphere.cn/csphere/autoscale`
   "ControllerAddr": "http://192.168.122.110/",
   "Groups": [
     {
-    	"App": "myapp",
-    	"Service": "api",
-    	"CpuLow": 5,
-    	"CpuHigh": 10,
-    	"MemoryLow": "15m",
-    	"MemoryHigh": "20m",
-    	"MaxContainers": 2,
-    	"MinContainers": 1
+      "App": "myapp",
+      "Service": "api",
+      "CpuLow": 5,
+      "CpuHigh": 10,
+      "MemoryLow": "15m",
+      "MemoryHigh": "20m",
+      "MaxContainers": 2,
+      "MinContainers": 1,
+      "Periods": 5
     }
   ]
 }
@@ -53,4 +52,5 @@ Docker 镜像：`docker pull index.csphere.cn/csphere/autoscale`
 - CpuLow: 服务中各容器的平均CPU利用率低于`CpuLow`**且**平均内存消耗低于`MemoryLow`时，容器数量自动减少1个，容器最低数量由`MinContainers`决定
 - CpuHigh: 服务中各容器的平均CPU利用率大于这个值时，容器数量自动加1, 容器数量最大值由`MaxContainers`决定
 - MemoryHigh: 服务中各容器的平均内存消耗大于这个值时，容器数量自动加1, 容器数量最大值由`MaxContainers`决定
+- Periods: 连续满足条件多少秒后开始执行伸缩动作，默认为5
 
