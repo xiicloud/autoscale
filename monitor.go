@@ -115,7 +115,7 @@ type monitor struct {
 	mem      map[string]float64
 
 	// The result of the last 5 checks. 0: no scale events. 1: scale out. -1: scale in.
-	recent5 []int8
+	recentN []int8
 }
 
 func newMonitor(asg *AutoScaleGroup) *monitor {
@@ -124,7 +124,7 @@ func newMonitor(asg *AutoScaleGroup) *monitor {
 		watchers:       make(map[string]*watcher),
 		cpu:            make(map[string]float64),
 		mem:            make(map[string]float64),
-		recent5:        make([]int8, 0, 5),
+		recentN:        make([]int8, 0, asg.Periods),
 	}
 }
 
@@ -157,10 +157,10 @@ func (m *monitor) watchContainersChange() {
 	}
 }
 
-func sum(vars []int8) int8 {
-	var s int8
+func sum(vars []int8) int {
+	var s int
 	for _, v := range vars {
-		s += v
+		s += int(v)
 	}
 	return s
 }
@@ -169,7 +169,7 @@ func (m *monitor) start() {
 	go m.watchContainersChange()
 
 	// Wait for the stats monitor to feed data.
-	time.Sleep(time.Second * 5)
+	time.Sleep(time.Second * time.Duration(m.Periods))
 
 	for range time.Tick(time.Second) {
 		m.Lock()
@@ -177,32 +177,32 @@ func (m *monitor) start() {
 
 		avgMem := avg(m.mem)
 		avgCpu := avg(m.cpu)
-		if len(m.recent5) == 5 {
-			m.recent5 = m.recent5[1:]
+		if len(m.recentN) == m.Periods {
+			m.recentN = m.recentN[1:]
 		}
 
 		if avgCpu >= m.CpuHigh || avgMem >= m.MemoryHigh {
-			m.recent5 = append(m.recent5, 1)
+			m.recentN = append(m.recentN, 1)
 		} else if avgCpu <= m.CpuLow && avgMem <= m.MemoryLow {
-			m.recent5 = append(m.recent5, -1)
+			m.recentN = append(m.recentN, -1)
 		} else {
-			m.recent5 = append(m.recent5, 0)
+			m.recentN = append(m.recentN, 0)
 		}
 
 		scaleOut := false
 		scaleIn := false
-		x := sum(m.recent5)
+		x := sum(m.recentN)
 		switch x {
-		case 5:
+		case m.Periods:
 			scaleOut = true
-		case -5:
+		case -1 * m.Periods:
 			scaleIn = true
 		default:
 			m.Unlock()
 			logrus.Debugf("sum: %d, cpu:%f, mem:%f, no need to scale", x, avgCpu, avgMem)
 			continue
 		}
-		m.recent5 = make([]int8, 0, 5)
+		m.recentN = make([]int8, 0, m.Periods)
 		currentContainers := len(m.watchers)
 		m.Unlock()
 
@@ -217,7 +217,11 @@ func (m *monitor) start() {
 		}
 
 		if scaleOut {
-			if err := scale(m.App, m.Service, currentContainers+1); err != nil {
+			n := currentContainers + 1
+			if n > m.MaxContainers {
+				n = m.MaxContainers
+			}
+			if err := scale(m.App, m.Service, n); err != nil {
 				logrus.Errorf("Failed to scale out %s.%s: %v", m.App, m.Service, err)
 			} else {
 				logrus.Infof("Added 1 new container to %s.%s", m.App, m.Service)
@@ -226,7 +230,7 @@ func (m *monitor) start() {
 			if err := scale(m.App, m.Service, currentContainers-1); err != nil {
 				logrus.Errorf("Failed to scale in %s.%s: %v", m.App, m.Service, err)
 			} else {
-				logrus.Infof("Deleted 1 new container from %s.%s", m.App, m.Service)
+				logrus.Infof("Deleted 1 container from %s.%s", m.App, m.Service)
 			}
 		}
 	}

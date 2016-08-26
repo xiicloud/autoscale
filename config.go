@@ -51,6 +51,7 @@ type AutoScaleGroup struct {
 	MemoryLow     float64
 	MaxContainers int
 	MinContainers int
+	Periods       int
 }
 
 type Config struct {
@@ -90,6 +91,9 @@ func (c *AutoScaleGroup) UnmarshalJSON(b []byte) error {
 	}
 
 	*c = AutoScaleGroup(m.tmp)
+	if c.Periods < 5 {
+		c.Periods = 5
+	}
 	return nil
 }
 
